@@ -19,10 +19,15 @@ var once sync.Once
 func GetDb() *gorm.DB {
 	once.Do(func() {
 		mig := flag.Bool("migrate", false, "Run migrations")
-		flag.Parse()
 		verbose := flag.Bool("v", false, "Verbose mode")
+		flag.Parse()
+
+		if os.Getenv("POSTGRES_PASSWORD") == "" {
+			log.Fatal("POSTGRES_PASSWORD env var is not set")
+		}
+
 		var err error
-		Db, err = gorm.Open("postgres", "host=127.0.0.1 port=5432 dbname=restpos user=postgres password=asd123 sslmode=disable")
+		Db, err = gorm.Open("postgres", "host=127.0.0.1 port=5432 dbname=restpos user=postgres password="+os.Getenv("POSTGRES_PASSWORD")+" sslmode=disable")
 		if err != nil {
 			log.Fatal(err)
 		}
