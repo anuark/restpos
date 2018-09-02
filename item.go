@@ -4,17 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
 )
 
 // Item .
 type Item struct {
-	gorm.Model
-	Name, ImagePath string
-	Enabled         bool
-	CategoryID      uint
+	Model
+	Name       string `json:"name"`
+	ImagePath  string `json:"image_path"`
+	Enabled    bool   `json:"enabled"`
+	CategoryID uint   `json:"category_id"`
 }
 
 // ItemIndex .
@@ -26,6 +27,10 @@ func ItemIndex(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	var count int
+	Db.Table("item").Count(&count)
+	w.Header().Add("X-Total-Count", strconv.Itoa(count))
 
 	fmt.Fprint(w, string(itemsJSON))
 }
