@@ -4,18 +4,42 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	userkey "restpos/pkg/userKey"
 	"strconv"
 
+	Context "github.com/gorilla/context"
 	"github.com/gorilla/mux"
 )
+
+type image struct {
+	URL         string `json:"url"`
+	Description string `json:"desc"`
+}
 
 // Item .
 type Item struct {
 	Model
-	Name       string `json:"name"`
-	ImagePath  string `json:"image_path"`
-	Enabled    bool   `json:"enabled"`
-	CategoryID uint   `json:"category_id"`
+	Name           string `json:"name"`
+	ImagePath      string `json:"image_path"`
+	Enabled        bool   `json:"enabled"`
+	CategoryID     uint   `json:"category_id"`
+	OrganizationID uint   `json:"organization_id"`
+	Image          image  `gorm:"-" json:"image"`
+}
+
+// AfterFind .
+func (i *Item) AfterFind() (err error) {
+	if i.ImagePath[:4] == "http" { // it's already a url
+		i.Image = image{i.ImagePath, i.Name}
+	} else {
+		url := os.Getenv("REACT_APP_RESTPOS_HOST") + i.ImagePath
+		fmt.Println(url)
+		// imageStruct := image{url, i.Name}
+		i.Image = image{url, i.Name}
+		// i.Image, err = json.Marshal(imageStruct)
+	}
+	return
 }
 
 // ItemIndex .
@@ -41,6 +65,9 @@ func ItemCreate(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.Decode(&item)
 
+	user := Context.Get(r, userkey.Key).(User)
+
+	item.OrganizationID = user.OrganizationID
 	Db.Create(&item)
 
 	itemJSON, err := json.Marshal(item)
