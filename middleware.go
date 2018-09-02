@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"net/http"
 	userkey "restpos/pkg/userKey"
@@ -16,32 +14,6 @@ import (
 // Middleware .
 type Middleware func(f http.HandlerFunc) http.HandlerFunc
 
-// Chain .
-func Chain(f http.HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
-	for _, m := range middlewares {
-		f = m(f)
-	}
-	return f
-}
-
-// Before .
-func Before() Middleware {
-	return func(f http.HandlerFunc) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			var ctx context.Context
-			f(w, r.WithContext(ctx))
-		}
-	}
-}
-
-// func After() Middleware {
-// 	return func(f http.HandlerFunc) http.HandlerFunc {
-// 		return func(w http.ResponseWriter, r *http.Request) {
-// 			f(w, r)
-// 		}
-// 	}
-// }
-
 // Log .
 func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -53,11 +25,12 @@ func Log(next http.Handler) http.Handler {
 		} else {
 			id = "-"
 		}
-		defer func() { log.Printf("%s [%s] (%s) %s", time.Since(start), id, r.Method, r.URL.Path) }()
+		defer func() { log.Printf("%s [%s] %s %s", time.Since(start), id, r.Method, r.URL.Path) }()
 		next.ServeHTTP(w, r)
 	})
 }
 
+// Skip urls that don't need authentication
 var skipUrls = []string{
 	"/",
 	"/auth",
@@ -66,9 +39,9 @@ var skipUrls = []string{
 // Auth .
 func Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Skip urls that don't need authentication
+		isImagePath := len(r.URL.Path) > 7 && r.URL.Path[:7] == "/static"
 		for _, v := range skipUrls {
-			if r.URL.Path == v {
+			if r.URL.Path == v || isImagePath {
 				next.ServeHTTP(w, r)
 				return
 			}
@@ -86,7 +59,6 @@ func Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		fmt.Println(key[1])
 		var user User
 		Db.First(&user, "auth_key = ?", key[1])
 
@@ -96,6 +68,7 @@ func Auth(next http.Handler) http.Handler {
 		}
 
 		Context.Set(r, userkey.Key, user)
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -118,8 +91,13 @@ func Cors(next http.Handler) http.Handler {
 // JSONContentType All responses will be json Content-Type
 func JSONContentType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Content-Type", "application/json")
+		isImagePath := len(r.URL.Path) > 7 && r.URL.Path[:7] == "/static"
+		defer next.ServeHTTP(w, r)
 
-		next.ServeHTTP(w, r)
+		if isImagePath {
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
 	})
 }
