@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
 import './App.css';
 import { Admin, Resource, fetchUtils } from 'react-admin';
-import simpleRestProvider from 'ra-data-simple-rest';
+import jsonServerRestClient from 'ra-data-json-server';
 import { ItemList } from './items';
 import CatchAll from './CatchAll';
 import AuthProvider from './authProvider';
+import Dashboard from './Dashboard';
 
 const httpClient = (url, options = {}) => {
     if (!options.headers) {
@@ -15,15 +16,13 @@ const httpClient = (url, options = {}) => {
     options.headers.set('Authorization', `Bearer ${token}`);
     return fetchUtils.fetchJson(url, options);
 }
-
-const dataProvider = simpleRestProvider('http://localhost:81', httpClient);
-
+const dataProvider = jsonServerRestClient(process.env.REACT_APP_RESTPOS_HOST, httpClient);
 class App extends Component {
     render() {
         return (
-            <Admin dataProvider={dataProvider} authProvider={AuthProvider} title="Restaurant POS" catchAll={CatchAll} >
+            <Admin dataProvider={dataProvider} authProvider={AuthProvider} title="Restaurant POS" dashboard={Dashboard} catchAll={CatchAll} >
                 <Resource name="items" list={ItemList} />
-                <Resource name="orders" />
+                {/* <Resource name="orders" /> */}
             </Admin>
         );
     }
