@@ -1,12 +1,16 @@
 import React from 'react';
 import Card from '@material-ui/core/Card';
+import CardHeader from '@material-ui/core/CardHeader';
 import CardContent from '@material-ui/core/CardContent';
+import Typography from '@material-ui/core/Typography';
 
 export default () => (
     <Card>
-        <ViewTitle title="Error" />
+        <CardHeader title="Error" />
         <CardContent>
-            <h1>404: Page not found</h1>
+            <Typography component="h2">
+                404: Page not found
+            </Typography>
         </CardContent>
     </Card>
-)
+);
