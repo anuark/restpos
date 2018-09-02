@@ -1,8 +1,7 @@
 package main
 
-import "github.com/jinzhu/gorm"
-
+// Customer .
 type Customer struct {
-	gorm.Model
+	Model
 	Name, Email uint
 }

@@ -1,8 +1,7 @@
 package main
 
-import "github.com/jinzhu/gorm"
-
+// Organization .
 type Organization struct {
-	gorm.Model
+	Model
 	Name, Logo string
 }

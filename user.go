@@ -8,16 +8,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // User .
 type User struct {
-	gorm.Model
-	Username, Email, AuthKey, PasswordHash string
-	OrganizationID                         uint
-	Password                               string `gorm:"-"`
+	Model
+	Email, AuthKey, PasswordHash string
+	Username                     string `json:"username"`
+	OrganizationID               uint
+	Password                     string `gorm:"-" json:"password"`
 }
 
 // HashPassword .
@@ -46,18 +46,19 @@ func UserAuth(w http.ResponseWriter, r *http.Request) {
 	var user User
 	decoder.Decode(&user)
 
-	if user.Email == "" || user.Password == "" {
+	if user.Username == "" || user.Password == "" {
 		http.Error(w, "Email or password field can't be empty.", http.StatusBadRequest)
 		return
 	}
 
-	Db.First(&user, "email = ?", user.Email)
-	if user.ID == 0 || user.CheckPasswordHash() {
+	Db.First(&user, "username = ?", user.Username)
+	if user.ID == 0 || !user.CheckPasswordHash() {
 		http.Error(w, "Wrong email and password combination", http.StatusBadRequest)
 		return
 	}
 
-	keyJSON, _ := json.Marshal(struct{ Key string }{user.AuthKey})
-	fmt.Println(keyJSON)
-	fmt.Fprint(w, keyJSON)
+	keyJSON, _ := json.Marshal(struct {
+		Key string `json:"key"`
+	}{user.AuthKey})
+	fmt.Fprint(w, string(keyJSON))
 }
